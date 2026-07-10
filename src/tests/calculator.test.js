@@ -1,6 +1,7 @@
 /**
  * calculator.test.js - Unit tests for the calculator functions
- * (add, subtract, multiply, divide) in src/calculator.js.
+ * (add, subtract, multiply, divide, modulo, power, squareRoot) in
+ * src/calculator.js.
  *
  * Base examples (from images/calc-basic-operations.png):
  *   2 + 3  = 5
@@ -8,11 +9,16 @@
  *   45 * 2 = 90
  *   20 / 5 = 4
  *
+ * Base examples (from images/calc-extended-operations.png):
+ *   5 % 2  = 1  (modulo)
+ *   2 ^ 3  = 8  (power)
+ *   √16    = 4  (square root)
+ *
  * Each base example is expanded with additional cases covering
  * negative numbers, decimals, zero, and other edge cases.
  */
 
-const { add, subtract, multiply, divide, calculate } = require('../calculator');
+const { add, subtract, multiply, divide, modulo, power, squareRoot, calculate } = require('../calculator');
 
 describe('add', () => {
   test('2 + 3 = 5 (base example)', () => {
@@ -119,14 +125,94 @@ describe('divide', () => {
   });
 });
 
+describe('modulo', () => {
+  test('5 % 2 = 1 (base example)', () => {
+    expect(modulo(5, 2)).toBe(1);
+  });
+
+  test('10 % 3 = 1', () => {
+    expect(modulo(10, 3)).toBe(1);
+  });
+
+  test('returns 0 when evenly divisible', () => {
+    expect(modulo(9, 3)).toBe(0);
+  });
+
+  test('handles negative operands', () => {
+    expect(modulo(-10, 3)).toBe(-1);
+  });
+
+  test('throws when dividing by zero', () => {
+    expect(() => modulo(5, 0)).toThrow('Division by zero is not allowed.');
+  });
+});
+
+describe('power', () => {
+  test('2 ^ 3 = 8 (base example)', () => {
+    expect(power(2, 3)).toBe(8);
+  });
+
+  test('2 ^ 8 = 256', () => {
+    expect(power(2, 8)).toBe(256);
+  });
+
+  test('any number to the power of 0 is 1', () => {
+    expect(power(5, 0)).toBe(1);
+  });
+
+  test('handles negative exponents', () => {
+    expect(power(2, -1)).toBe(0.5);
+  });
+
+  test('handles negative bases', () => {
+    expect(power(-2, 3)).toBe(-8);
+  });
+});
+
+describe('squareRoot', () => {
+  test('√16 = 4 (base example)', () => {
+    expect(squareRoot(16)).toBe(4);
+  });
+
+  test('sqrt(0) = 0', () => {
+    expect(squareRoot(0)).toBe(0);
+  });
+
+  test('handles non-perfect squares', () => {
+    expect(squareRoot(2)).toBeCloseTo(1.4142);
+  });
+
+  test('handles decimal input', () => {
+    expect(squareRoot(2.25)).toBe(1.5);
+  });
+
+  test('throws for negative numbers (edge case)', () => {
+    expect(() => squareRoot(-4)).toThrow(
+      'Cannot compute the square root of a negative number.'
+    );
+  });
+
+  test('throws for a negative decimal number (edge case)', () => {
+    expect(() => squareRoot(-0.5)).toThrow(
+      'Cannot compute the square root of a negative number.'
+    );
+  });
+});
+
 describe('calculate (CLI argument parsing)', () => {
   test.each([
     ['2', '+', '3', 5],
     ['10', '-', '4', 6],
     ['45', '*', '2', 90],
     ['20', '/', '5', 4],
+    ['5', '%', '2', 1],
+    ['2', '^', '3', 8],
   ])('calculate([%s, %s, %s]) = %d', (a, op, b, expected) => {
     expect(calculate([a, op, b])).toBe(expected);
+  });
+
+  test('supports sqrt via CLI parsing (base example: √16 = 4)', () => {
+    expect(calculate(['sqrt', '16'])).toBe(4);
   });
 
   test('supports word-based operation aliases', () => {
@@ -150,7 +236,7 @@ describe('calculate (CLI argument parsing)', () => {
   });
 
   test('throws for unsupported operations', () => {
-    expect(() => calculate(['2', '%', '3'])).toThrow(
+    expect(() => calculate(['2', '&', '3'])).toThrow(
       /Unsupported operation/
     );
   });
@@ -158,6 +244,32 @@ describe('calculate (CLI argument parsing)', () => {
   test('throws for division by zero via CLI parsing', () => {
     expect(() => calculate(['5', '/', '0'])).toThrow(
       'Division by zero is not allowed.'
+    );
+  });
+
+  test('supports modulo via CLI parsing', () => {
+    expect(calculate(['10', '%', '3'])).toBe(1);
+    expect(calculate(['10', 'mod', '3'])).toBe(1);
+  });
+
+  test('supports power via CLI parsing', () => {
+    expect(calculate(['2', '^', '8'])).toBe(256);
+    expect(calculate(['2', '**', '8'])).toBe(256);
+  });
+
+  test('supports sqrt via CLI parsing (unary)', () => {
+    expect(calculate(['sqrt', '16'])).toBe(4);
+  });
+
+  test('throws for sqrt with a missing operand via CLI parsing', () => {
+    expect(() => calculate(['sqrt'])).toThrow(
+      'Usage: node src/calculator.js sqrt <num>'
+    );
+  });
+
+  test('throws for sqrt of a negative number via CLI parsing', () => {
+    expect(() => calculate(['sqrt', '-4'])).toThrow(
+      'Cannot compute the square root of a negative number.'
     );
   });
 });
